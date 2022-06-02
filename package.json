@@ -1,34 +1,47 @@
 {
-  "name": "anchor-cargo-fix",
-  "version": "1.0.0",
+  "name": "cargo-lock-fix",
+  "version": "1.0.4",
   "description": "",
-  "main": "index.js",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "format": "prettier --write \"src/**/*.ts\" \"lib/**/*.js\" \"lib/**/*.js\"",
+    "build": "node node_modules/.bin/tsup src/index.ts --format cjs,esm --dts --clean",
+    "format": "prettier --write \"src/**/*.ts\" \"dist/**/*.js\" \"dist/**/*.js\" \"dist/**/*.mjs\"",
     "lint": "tslint -p tsconfig.json",
     "test": "ts-node tests/test.ts"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/javaidea/anchor-cargo-fix.git"
+    "url": "git+https://github.com/javaidea/cargo-lock-fix.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/javaidea/anchor-cargo-fix/issues"
+    "url": "https://github.com/javaidea/cargo-lock-fix/issues"
   },
-  "homepage": "https://github.com/javaidea/anchor-cargo-fix#readme",
+  "homepage": "https://github.com/javaidea/cargo-lock-fix#readme",
   "devDependencies": {
     "@types/node": "^17.0.38",
     "prettier": "^2.6.2",
     "tslint": "^6.1.3",
     "tslint-config-prettier": "^1.18.0",
-    "typescript": "^4.6.4"
+    "tsup": "^6.0.1",
+    "typescript": "^4.6.4",
+    "unbuild": "^0.7.4"
   },
+  "files": [
+    "dist/**/*"
+  ],
   "dependencies": {
     "axios": "^0.27.2"
   },
-  "files": ["lib/**/*"]
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.ts"
+    }
+  }
 }

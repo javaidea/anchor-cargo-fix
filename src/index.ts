@@ -1,9 +1,11 @@
 import * as fs from 'fs';
 import axios from 'axios';
+import { exit } from 'process';
 
-const CRATE_IO_BASE_URL = 'https://raw.githubusercontent.com/rust-lang/crates.io-index/master';
-
-const http = axios.create();
+const http = axios.create({
+  baseURL: 'https://raw.githubusercontent.com/rust-lang/crates.io-index/master',
+  timeout: 10000,
+});
 
 const getCrate = async (crateName: string, version: string) => {
   let url = '';
@@ -11,21 +13,36 @@ const getCrate = async (crateName: string, version: string) => {
     const p0 = crateName.substring(0, 2);
     const p1 = crateName.substring(2, 4);
 
-    url = `${CRATE_IO_BASE_URL}/${p0}/${p1}/${crateName}`;
+    url = `/${p0}/${p1}/${crateName}`;
   } else if (crateName.length > 2) {
     const p0 = crateName.substring(0, 1);
 
-    url = `${CRATE_IO_BASE_URL}/3/${p0}/${crateName}`;
+    url = `/3/${p0}/${crateName}`;
   } else if (crateName.length > 1) {
-    url = `${CRATE_IO_BASE_URL}/2/${crateName}`;
+    url = `/2/${crateName}`;
   } else {
-    url = `${CRATE_IO_BASE_URL}/1/${crateName}`;
+    url = `/1/${crateName}`;
   }
 
-  const response = await http.get(url).catch((error) => {
-    // console.log('Failed to load content from: ', url);
-    return null;
-  });
+  let response: any;
+  let retryCount = 0;
+  const retryLimit = 5;
+  while (retryCount < retryLimit) {
+    try {
+      response = await http.get(url);
+      if (response.status === 200) {
+        break;
+      }
+    } catch (e) {
+      // Ignore here
+    }
+    retryCount++;
+    process.stdout.write('Fetching ' + crateName + ', retry ' + retryCount + '\r');
+    if (retryCount === retryLimit) {
+      console.log('Failed to load content from:', url);
+      exit(-1);
+    }
+  }
 
   if (response?.data) {
     const lines = response.data.split(/\r?\n/);
@@ -34,19 +51,19 @@ const getCrate = async (crateName: string, version: string) => {
         if (line.length > 0) {
           const obj = JSON.parse(line);
           if (obj.vers === version) {
+            console.log('Process:', obj.name, ', version:', obj.vers);
             return obj;
           }
         }
       } catch (e) {
-        //   console.log(e);
-        // console.log('Failed to parse line:\n', line);
+        console.log('Failed to parse line:\n', line);
       }
     }
   }
   return null;
 };
 
-const getCrates = async (crateName: string, version: string, fetchChilds = false) => {
+const getCrates = async (crateName: string, version: string, fetchChilds = false, prefix: string | null) => {
   const crates: any[] = [];
   const crate: any = await getCrate(crateName, version);
 
@@ -58,9 +75,15 @@ const getCrates = async (crateName: string, version: string, fetchChilds = false
         if (req.startsWith('^') || req.startsWith('~')) {
           req = req.substring(1);
         }
-
-        const childCrate = await getCrate(dep.name, req);
-        return childCrate;
+        if (prefix) {
+          if (dep.name.startsWith(prefix)) {
+            const childCrate = await getCrate(dep.name, req);
+            return childCrate;
+          }
+        } else {
+          const childCrate = await getCrate(dep.name, req);
+          return childCrate;
+        }
       }),
     );
 
@@ -113,9 +136,12 @@ const createFixedCrates = (crates: any, prefix: string | null) => {
 };
 
 export const createFixFile = async (cratesToFix: any, fixFile: string, prefix: string | null) => {
+  if (fs.existsSync(fixFile)) {
+    fs.rmSync(fixFile);
+  }
   let fixedCrates = await Promise.all(
     cratesToFix.map(async (crateToFix: any) => {
-      const crates = await getCrates(crateToFix.name, crateToFix.version, crateToFix.fetchChilds);
+      const crates = await getCrates(crateToFix.name, crateToFix.version, crateToFix.fetchChilds, prefix);
       return createFixedCrates(crates, prefix);
     }),
   );
