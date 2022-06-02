@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { createFixFile } from '../lib';
+import { createFixFile } from '../src';
 
 const cratesToFix = [
   {
@@ -8,8 +8,8 @@ const cratesToFix = [
     version: '0.18.2',
     fetchChilds: true,
   },
-  //   { name: "anchor-spl", version: "0.18.2", fetchChilds: false },
-  //   { name: "anchor-syn", version: "0.18.2", fetchChilds: false },
+  { name: 'anchor-spl', version: '0.18.2', fetchChilds: false },
+  { name: 'anchor-syn', version: '0.18.2', fetchChilds: false },
 ];
 
 const outputPath = `${__dirname}/../build`;
