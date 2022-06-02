@@ -3,9 +3,17 @@
 The purpose of this package is to help generating the needed cargo lock configurations. So far this package will not modify the Cargo.lock file. But it will generate the requested crate configurations and write it in a file you specify.
 
 1. Installation
+
+   ```bash
    npm i cargo-lock-fix -D
+   ```
+
    or
+
+   ```bash
    yarn add -D cargo-lock-fix
+   ```
+
 2. Usage
    Create a script fix-cargo.js. Some sample code can like below:
 
